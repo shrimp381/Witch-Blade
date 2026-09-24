@@ -18,7 +18,21 @@ https://raw.githubusercontent.com/Shrimp381/witch-blade/main/module.json
 
 Enable **Witch-Blade** in your world.
 
+## Compendiums
+
+The module adds a **Witch-Blade** compendium folder with two compendiums:
+
+- **Witch-Blade: Class & Features.** This has:
+  - the Witch-Blade class (V2.5)
+  - all four subclasses: Seeker, Executioner, Sentinel and Veil-Splitter
+  - every class and subclass feature
+
+  Level-up grants features automatically, and the scaling numbers (Feral Edge damage, DC and uses; Targeted Strike and Vein-Charged dice) update with level. The Veil-Splitter casts with Intelligence, and its spell slots follow the V2.5 table.
+- **Witch-Blade: Tables.** The **Feral Instability** (1d10) and **Feral Mutations** (1d100) roll tables. The module imports them into the world automatically the first time a GM loads it.
+
 ## Set up a character
+
+Drag the **Witch-Blade** class from the compendium onto the character and level up as normal. Pick a subclass at 3rd level.
 
 A character counts as a Witch-Blade if any of these are true:
 - it has a class item with the identifier `witch-blade`
@@ -89,9 +103,14 @@ Clicking a technique asks which outcome happened when there is more than one, fo
 
 ## Not yet included
 
-- Class features other than Blood Surge and Ferality (Feral Edge, Bestial Vitality and so on)
-- Hardened Ferality, Controlled Tap and the level 17–20 capstones
-- The alchemy items
+- Hardened Ferality, Controlled Tap and the level 17–20 capstones are in the compendium with their uses and effects, but they don't interact with the Ferality tracker yet.
+- The alchemy items and the Witch-Blade Initiate background.
+
+## Changelog
+
+- **0.2.1:** Class, subclass and feature compendium (V2.5), and a roll tables compendium.
+- **0.2.0:** Tidy 5e Sheets tab, Ferality Cap Save and Feral State automation, core icons, Surge Techniques features section.
+- **0.1.0:** First release.
 
 ## For macro writers
 

@@ -2,7 +2,7 @@
   "id": "witch-blade",
   "title": "Witch-Blade",
   "description": "Character sheet support for the Witch-Blade homebrew class for D&D 5e. Adds a Ferality tab to the default character sheet or Tidy 5e Sheets, with a level-scaled FP gauge, Blood Surge, the end-of-turn and Ferality cap saves, automated Feral State, Feral Instability and Mutation tables, and live-filtered surge techniques. Generates standard feature items so everything also works from Argon Combat HUD.",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "compatibility": {
     "minimum": "13",
     "verified": "13"
@@ -47,6 +47,42 @@
       "lang": "en",
       "name": "English",
       "path": "lang/en.json"
+    }
+  ],
+  "packs": [
+    {
+      "name": "witch-blade-items",
+      "label": "Witch-Blade: Class & Features",
+      "path": "packs/witch-blade-items",
+      "type": "Item",
+      "system": "dnd5e",
+      "ownership": {
+        "PLAYER": "OBSERVER",
+        "ASSISTANT": "OWNER"
+      },
+      "flags": {}
+    },
+    {
+      "name": "witch-blade-tables",
+      "label": "Witch-Blade: Tables",
+      "path": "packs/witch-blade-tables",
+      "type": "RollTable",
+      "ownership": {
+        "PLAYER": "OBSERVER",
+        "ASSISTANT": "OWNER"
+      },
+      "flags": {}
+    }
+  ],
+  "packFolders": [
+    {
+      "name": "Witch-Blade",
+      "sorting": "m",
+      "color": "#6e1320",
+      "packs": [
+        "witch-blade-items",
+        "witch-blade-tables"
+      ]
     }
   ],
   "url": "https://github.com/Shrimp381/witch-blade",

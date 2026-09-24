@@ -167,8 +167,27 @@ function registerTidyTab(api) {
 /*  Roll tables                                 */
 /* -------------------------------------------- */
 
+const TABLES_PACK = `${MODULE_ID}.witch-blade-tables`;
+
 async function ensureTables() {
   if (!game.user.isGM || !game.settings.get(MODULE_ID, "createTables")) return;
+
+  // Import any missing table from the module's compendium; build it from data only if that fails.
+  const pack = game.packs?.get(TABLES_PACK);
+  if (pack) {
+    const index = await pack.getIndex();
+    for (const name of [INSTABILITY_TABLE, MUTATION_TABLE]) {
+      if (game.tables.getName(name)) continue;
+      const entry = index.find(e => e.name === name);
+      if (!entry) continue;
+      try {
+        await game.tables.importFromCompendium(pack, entry._id, {}, { keepId: true });
+        ui.notifications.info(tf("Info.TableCreated", { name }));
+      } catch (err) {
+        console.warn(`${MODULE_ID} | Could not import ${name} from the compendium`, err);
+      }
+    }
+  }
 
   if (!game.tables.getName(INSTABILITY_TABLE)) {
     await RollTable.create({
