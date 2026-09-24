@@ -1,0 +1,52 @@
+{
+  "id": "witch-blade",
+  "title": "Witch-Blade",
+  "description": "Character sheet support for the Witch-Blade homebrew class for D&D 5e: a Ferality tab with a level-scaled FP gauge, Blood Surge, the end-of-turn Wisdom save, Feral Instability table draws, and live-filtered surge techniques. Generates standard feature items so everything also works from Argon Combat HUD.",
+  "version": "0.1.0",
+  "compatibility": {
+    "minimum": "13",
+    "verified": "13"
+  },
+  "authors": [
+    {
+      "name": "Shrimp"
+    }
+  ],
+  "relationships": {
+    "systems": [
+      {
+        "id": "dnd5e",
+        "type": "system",
+        "compatibility": {
+          "minimum": "5.0.0",
+          "verified": "5.3.3"
+        }
+      }
+    ],
+    "recommends": [
+      {
+        "id": "enhancedcombathud-dnd5e",
+        "type": "module",
+        "reason": "Shows Blood Surge, the End-of-Turn Save and surge techniques as Argon Combat HUD buttons."
+      }
+    ]
+  },
+  "esmodules": [
+    "scripts/witchblade-sheet.js"
+  ],
+  "styles": [
+    "styles/styles.css"
+  ],
+  "languages": [
+    {
+      "lang": "en",
+      "name": "English",
+      "path": "lang/en.json"
+    }
+  ],
+  "url": "https://github.com/Shrimp381/witch-blade",
+  "manifest": "https://raw.githubusercontent.com/Shrimp381/witch-blade/main/module.json",
+  "download": "https://github.com/Shrimp381/witch-blade/releases/latest/download/module.zip",
+  "readme": "https://github.com/Shrimp381/witch-blade/blob/main/README.md",
+  "bugs": "https://github.com/Shrimp381/witch-blade/issues"
+}

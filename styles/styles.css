@@ -1,0 +1,253 @@
+/* Witch-Blade: Ferality tab, chat cards, dialog.
+   Everything is scoped under .witch-blade-sheet / .witch-blade-card / .witch-blade-dialog. */
+
+.witch-blade-sheet .wb-tab,
+.witch-blade-card,
+.witch-blade-dialog {
+  --wb-ink: #130d0f;
+  --wb-panel: #1d1417;
+  --wb-panel-2: #261a1e;
+  --wb-line: #3b2a2e;
+  --wb-bone: #ece2d3;
+  --wb-dim: #a8958c;
+  --wb-faint: #6f5f5a;
+  --wb-blood: #b3202f;
+  --wb-blood-deep: #6e1320;
+  --wb-ember: #e0683c;
+  --wb-brass: #c4a063;
+  --wb-verdigris: #5f9a86;
+  --wb-mono: "IBM Plex Mono", ui-monospace, Consolas, monospace;
+}
+
+/* ── Tab shell ─────────────────────────────── */
+.witch-blade-sheet .wb-tab {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 12px;
+  background: var(--wb-ink);
+  color: var(--wb-bone);
+}
+.witch-blade-sheet .wb-tab:not(.active) { display: none; }
+.witch-blade-sheet .wb-tab h3 {
+  margin: 0;
+  border: 0;
+  font-family: var(--dnd5e-font-roboto-slab, serif);
+  font-size: 1.15rem;
+  color: var(--wb-bone);
+  letter-spacing: .02em;
+}
+.witch-blade-sheet .wb-tab button { font-family: inherit; }
+.witch-blade-sheet .wb-tab button:focus-visible { outline: 2px solid var(--wb-brass); outline-offset: 2px; }
+
+.witch-blade-sheet .wb-strip {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 20px;
+  align-items: end;
+  padding: 10px 12px;
+  background: var(--wb-panel);
+  border: 1px solid var(--wb-line);
+  border-radius: 6px;
+}
+.witch-blade-sheet .wb-stat { display: grid; gap: 2px; }
+.witch-blade-sheet .wb-stat span {
+  font-size: .7rem;
+  text-transform: uppercase;
+  letter-spacing: .12em;
+  color: var(--wb-dim);
+}
+.witch-blade-sheet .wb-stat b {
+  font-family: var(--wb-mono);
+  font-size: 1.1rem;
+  font-variant-numeric: tabular-nums;
+}
+.witch-blade-sheet .wb-sub select {
+  background: var(--wb-ink);
+  color: var(--wb-bone);
+  border: 1px solid var(--wb-line);
+  border-radius: 4px;
+  height: 26px;
+}
+
+.witch-blade-sheet .wb-panel {
+  padding: 12px;
+  background: var(--wb-panel);
+  border: 1px solid var(--wb-line);
+  border-radius: 6px;
+}
+
+/* ── Gauge ─────────────────────────────────── */
+.witch-blade-sheet .wb-gauge-head {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+.witch-blade-sheet .wb-fp {
+  font-family: var(--wb-mono);
+  font-size: 2rem;
+  font-weight: 600;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+.witch-blade-sheet .wb-fp small { font-size: 1rem; color: var(--wb-dim); font-weight: 400; }
+
+.witch-blade-sheet .wb-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 2px 10px;
+  border-radius: 999px;
+  border: 1px solid var(--wb-line);
+  font-size: .72rem;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+}
+.witch-blade-sheet .wb-pill::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: currentColor; }
+.witch-blade-sheet .wb-pill.calm { color: var(--wb-verdigris); border-color: #2f4c43; }
+.witch-blade-sheet .wb-pill.surge { color: var(--wb-ember); border-color: #6b3322; }
+.witch-blade-sheet .wb-pill.cap { color: #ff8a70; border-color: var(--wb-blood); background: #2a0f14; }
+
+.witch-blade-sheet .wb-stepper { display: flex; gap: 4px; margin-left: auto; }
+.witch-blade-sheet .wb-stepper button {
+  width: 28px; height: 28px; line-height: 1; padding: 0;
+  background: var(--wb-panel-2); color: var(--wb-bone);
+  border: 1px solid var(--wb-line); border-radius: 4px;
+  font-family: var(--wb-mono); font-size: 1rem;
+}
+
+.witch-blade-sheet .wb-nodes {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 5px;
+  padding: 18px 0 20px;
+}
+.witch-blade-sheet .wb-node {
+  position: relative;
+  width: 26px; height: 38px; min-width: 0; padding: 0; flex: 0 0 auto;
+  border: 1px solid var(--wb-line);
+  border-radius: 12px 12px 5px 5px;
+  background: linear-gradient(to top, var(--wb-ink), var(--wb-panel-2));
+  box-shadow: none;
+}
+.witch-blade-sheet .wb-node::after {
+  content: attr(data-n);
+  position: absolute; left: 0; right: 0; bottom: -16px;
+  font-family: var(--wb-mono); font-size: 10px; text-align: center; color: var(--wb-faint);
+}
+.witch-blade-sheet .wb-node.on {
+  background: linear-gradient(to top, var(--wb-blood-deep), var(--wb-blood) 70%, #e2475a);
+  border-color: #d1394b;
+  box-shadow: 0 0 10px -2px rgba(179, 32, 47, .7);
+}
+.witch-blade-sheet .wb-node.near.on { background: linear-gradient(to top, #7a2412, var(--wb-ember)); border-color: var(--wb-ember); }
+.witch-blade-sheet .wb-node.over { border-style: dashed; border-color: var(--wb-blood); }
+.witch-blade-sheet .wb-node.over.on { background: repeating-linear-gradient(135deg, var(--wb-blood) 0 5px, #4a0c16 5px 10px); }
+.witch-blade-sheet .wb-cap-mark {
+  position: relative; align-self: stretch; width: 2px; margin-inline: 2px;
+  background: var(--wb-brass); border-radius: 1px;
+}
+.witch-blade-sheet .wb-cap-mark::after {
+  content: "CAP"; position: absolute; top: -15px; left: 50%; transform: translateX(-50%);
+  font-size: 9px; letter-spacing: .14em; color: var(--wb-brass);
+}
+
+.witch-blade-sheet .wb-warn {
+  margin: 0 0 10px;
+  padding: 8px 10px;
+  border-left: 3px solid var(--wb-blood);
+  border-radius: 0 4px 4px 0;
+  background: #231015;
+}
+.witch-blade-sheet .wb-warn b { color: #ff9a86; }
+
+.witch-blade-sheet .wb-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+.witch-blade-sheet .wb-btn {
+  display: inline-flex; align-items: center; gap: 8px; width: auto; height: auto;
+  padding: 7px 12px;
+  background: var(--wb-panel-2); color: var(--wb-bone);
+  border: 1px solid var(--wb-line); border-radius: 4px;
+  font-weight: 500;
+}
+.witch-blade-sheet .wb-btn:hover:not(:disabled) { border-color: var(--wb-brass); }
+.witch-blade-sheet .wb-btn:disabled { opacity: .4; cursor: not-allowed; }
+.witch-blade-sheet .wb-btn.primary { background: linear-gradient(var(--wb-blood), var(--wb-blood-deep)); border-color: #d1394b; }
+.witch-blade-sheet .wb-btn.primary.active { background: var(--wb-ink); border-color: var(--wb-ember); color: var(--wb-ember); }
+.witch-blade-sheet .wb-btn small { font-family: var(--wb-mono); font-size: .75rem; opacity: .85; }
+.witch-blade-sheet .wb-summary { margin: 10px 0 0; font-size: .85rem; color: var(--wb-dim); }
+
+/* ── Techniques ────────────────────────────── */
+.witch-blade-sheet .wb-tech-head { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 8px; }
+.witch-blade-sheet .wb-count { font-size: .72rem; letter-spacing: .1em; text-transform: uppercase; color: var(--wb-dim); }
+.witch-blade-sheet .wb-filters { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 10px; }
+.witch-blade-sheet .wb-chip {
+  width: auto; height: auto; padding: 2px 10px;
+  background: transparent; color: var(--wb-dim);
+  border: 1px solid var(--wb-line); border-radius: 999px;
+  font-size: .8rem;
+}
+.witch-blade-sheet .wb-chip.active { background: var(--wb-panel-2); color: var(--wb-bone); border-color: var(--wb-brass); }
+.witch-blade-sheet .wb-locked-toggle { margin-left: auto; }
+
+.witch-blade-sheet .wb-tech-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 5px; }
+.witch-blade-sheet .wb-tech { background: var(--wb-ink); border: 1px solid var(--wb-line); border-radius: 4px; }
+.witch-blade-sheet .wb-tech.locked { opacity: .55; }
+.witch-blade-sheet .wb-tech-row {
+  display: grid; grid-template-columns: auto 1fr auto auto; align-items: center; gap: 10px;
+  width: 100%; height: auto; padding: 7px 10px;
+  background: none; border: 0; color: var(--wb-bone); text-align: left;
+}
+.witch-blade-sheet .wb-req {
+  width: 38px; padding: 2px 0; text-align: center; white-space: nowrap;
+  font-family: var(--wb-mono); font-size: .75rem; color: var(--wb-dim);
+  border: 1px solid var(--wb-line); border-radius: 3px;
+}
+.witch-blade-sheet .wb-tech.ready .wb-req { color: #ff8a70; border-color: var(--wb-blood); }
+.witch-blade-sheet .wb-tname { font-weight: 600; }
+.witch-blade-sheet .wb-tname em {
+  margin-left: 6px; font-style: normal; font-size: .65rem; letter-spacing: .1em;
+  text-transform: uppercase; color: var(--wb-brass);
+}
+.witch-blade-sheet .wb-grp { display: block; font-size: .75rem; font-weight: 400; color: var(--wb-faint); }
+.witch-blade-sheet .wb-abadge {
+  padding: 1px 7px; white-space: nowrap;
+  font-size: .65rem; letter-spacing: .08em; text-transform: uppercase; color: var(--wb-dim);
+  border: 1px solid var(--wb-line); border-radius: 3px;
+}
+.witch-blade-sheet .wb-abadge.assumed { border-style: dashed; }
+.witch-blade-sheet .wb-delta { min-width: 56px; text-align: right; white-space: nowrap; font-family: var(--wb-mono); font-size: .8rem; }
+.witch-blade-sheet .wb-delta .up { color: #ff8a70; }
+.witch-blade-sheet .wb-delta .down { color: var(--wb-verdigris); }
+.witch-blade-sheet .wb-tech-body { display: grid; gap: 8px; padding: 0 12px 12px 58px; font-size: .9rem; color: #d8ccbd; }
+.witch-blade-sheet .wb-tech-body p { margin: 0; }
+.witch-blade-sheet .wb-why { color: var(--wb-ember); font-size: .85rem; }
+.witch-blade-sheet .wb-opts { display: flex; flex-wrap: wrap; gap: 6px; }
+.witch-blade-sheet .wb-opts .wb-btn { padding: 4px 10px; font-size: .85rem; }
+.witch-blade-sheet .wb-empty { padding: 6px 0; color: var(--wb-dim); }
+
+.witch-blade-sheet .wb-foot { display: flex; justify-content: flex-end; }
+.witch-blade-sheet .wb-link {
+  width: auto; height: auto; padding: 0; background: none; border: 0;
+  color: var(--wb-dim); font-size: .8rem; text-decoration: underline;
+}
+
+/* ── Chat card ─────────────────────────────── */
+.witch-blade-card {
+  padding: 6px 8px;
+  background: var(--wb-panel);
+  color: var(--wb-bone);
+  border-left: 3px solid var(--wb-blood);
+  border-radius: 3px;
+}
+.witch-blade-card header { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
+.witch-blade-card h3 { margin: 0 0 4px; border: 0; font-size: 1rem; color: var(--wb-bone); }
+.witch-blade-card header span { font-family: var(--wb-mono); font-size: .7rem; color: var(--wb-brass); text-transform: uppercase; }
+.witch-blade-card p { margin: 3px 0; font-size: .85rem; }
+.witch-blade-card strong { color: #ff9a86; }
+
+/* ── Dialog ────────────────────────────────── */
+.witch-blade-dialog .wb-note { color: var(--wb-ember); }
+.witch-blade-dialog .wb-formula { font-family: var(--wb-mono); opacity: .8; }
+.witch-blade-dialog .wb-check { display: flex; align-items: center; gap: 6px; }

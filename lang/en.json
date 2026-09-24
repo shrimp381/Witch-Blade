@@ -1,0 +1,99 @@
+{
+  "WITCHBLADE": {
+    "Tab": "Ferality",
+    "SheetLabel": "Witch-Blade Character Sheet",
+    "Ferality": "Ferality",
+    "BloodSurge": "Blood Surge",
+    "EndSurge": "End Blood Surge",
+    "EndTurnSave": "End-of-Turn Save",
+    "Level": "Witch-Blade Level",
+    "Subclass": "Subclass",
+    "NoSubclass": "Choose…",
+    "Prof": "Prof",
+    "Cap": "FP Cap",
+    "FpDown": "Reduce FP by 1",
+    "FpUp": "Increase FP by 1",
+    "CapWarn": "<b>Ferality cap reached.</b> Make the Blood Surge save. Fail and you enter Feral State for 1d4 rounds plus 1 per point over the cap.",
+    "Techniques": "Surge Techniques",
+    "Ready": "ready",
+    "ShowLocked": "Show locked",
+    "FpRequired": "FP required",
+    "Advanced": "Advanced",
+    "ActionAssumed": "The rules don't state an action type; treated as an Action.",
+    "Use": "Use",
+    "SyncItems": "Refresh Witch-Blade feature items",
+    "Core": "Core",
+    "All": "All",
+    "EmptyFilter": "No techniques match this filter at your current FP.",
+    "EmptySurge": "Activate Blood Surge to use surge techniques.",
+    "SurgeActive": "Blood Surge active: +5 {stat}, melee +{dice}d4 force, advantage on STR checks and saves.",
+    "SurgeIdle": "Blood Surge: +5 {stat}, melee +{dice}d4 force, 1 minute, {uses} uses per short rest.",
+    "Success": "Success",
+    "Failure": "Failure",
+    "State": {
+      "Calm": "Calm",
+      "Cap": "At cap",
+      "Over": "Over cap +{over}"
+    },
+    "Lock": {
+      "Surge": "Needs Blood Surge",
+      "Level": "Unlocks at Witch-Blade level 11",
+      "Fp": "Needs {req} FP (you have {fp})",
+      "Once": "Already used this Blood Surge"
+    },
+    "Action": {
+      "action": "Action",
+      "bonus": "Bonus",
+      "reaction": "Reaction",
+      "free": "Free"
+    },
+    "Chat": {
+      "SurgeEndsTitle": "Blood Surge Ends",
+      "SurgeEnds": "The Blood Surge effect is removed.",
+      "SurgeOn": "+5 {stat}, melee attacks +{dice}d4 force, advantage on STR checks and saves. Surge techniques unlocked.",
+      "SaveSuccess": "End-of-Turn Save: Success",
+      "SaveFailure": "End-of-Turn Save: Failure",
+      "TranceTitle": "Trance",
+      "Trance": "Resting reduces FP by {cut} ({before} → {fp})."
+    },
+    "Warn": {
+      "SurgeLevel": "Blood Surge unlocks at Witch-Blade level 2.",
+      "NoUses": "No Blood Surge uses left. Take a short rest.",
+      "NoTable": "No Rollable Table named \"{name}\" exists. Create one, or turn on \"Create Witch-Blade tables\" in the module settings and reload."
+    },
+    "Dialog": {
+      "Leave": "Leave Blood Surge after this save",
+      "Advantage": "Advantage",
+      "Normal": "Normal",
+      "Disadvantage": "Disadvantage",
+      "GainedNote": "You gained FP this turn. By the class rules this save is optional, so you can close this window.",
+      "EndTurnText": "Wisdom save. Success: reduce FP by 1. Failure: gain 1 FP and draw from Feral Instability.",
+      "PickOutcome": "Which outcome happened?"
+    },
+    "Info": {
+      "TableCreated": "Witch-Blade: created the \"{name}\" Rollable Table.",
+      "Synced": "Witch-Blade items: {created} added, {updated} refreshed, {deleted} removed."
+    },
+    "Item": {
+      "BloodSurge": "Bonus action. For 1 minute: +5 STR (DEX for Seekers), melee attacks deal extra force damage (1d4, +1d4 per proficiency increase), advantage on STR checks and saves, and access to surge techniques. Gain 1 FP. Uses equal to your proficiency bonus per short rest. Using this again ends the surge.",
+      "EndTurnSave": "At the end of each turn in Blood Surge, if you have not gained FP, you can make a DC 13 Wisdom save. Success: reduce FP by 1 and optionally end Blood Surge. Failure: gain 1 FP and roll on the Feral Instability table."
+    },
+    "Settings": {
+      "CreateTables": {
+        "Name": "Create Witch-Blade tables",
+        "Hint": "When a GM loads the world, create the \"Feral Instability\" and \"Feral Mutations\" Rollable Tables if they don't exist."
+      },
+      "TechniqueItems": {
+        "Name": "Add surge techniques as feature items",
+        "Hint": "Adds each available surge technique to Witch-Blade characters as a feature item, so it shows in Argon Combat HUD and the Features tab. Blood Surge and the End-of-Turn Save are always added."
+      },
+      "Trance": {
+        "Name": "Trance reduces Ferality on",
+        "Hint": "FP drops by half the Witch-Blade level when resting. Choose which rests count.",
+        "Long": "Long rest only",
+        "Both": "Short and long rests",
+        "None": "Never (track it manually)"
+      }
+    }
+  }
+}
