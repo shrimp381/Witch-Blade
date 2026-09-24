@@ -33,13 +33,15 @@
     "State": {
       "Calm": "Calm",
       "Cap": "At cap",
-      "Over": "Over cap +{over}"
+      "Over": "Over cap +{over}",
+      "Feral": "Feral · {rounds} rd"
     },
     "Lock": {
       "Surge": "Needs Blood Surge",
       "Level": "Unlocks at Witch-Blade level 11",
       "Fp": "Needs {req} FP (you have {fp})",
-      "Once": "Already used this Blood Surge"
+      "Once": "Already used this Blood Surge",
+      "Feral": "Unavailable in Feral State"
     },
     "Action": {
       "action": "Action",
@@ -54,7 +56,19 @@
       "SaveSuccess": "End-of-Turn Save: Success",
       "SaveFailure": "End-of-Turn Save: Failure",
       "TranceTitle": "Trance",
-      "Trance": "Resting reduces FP by {cut} ({before} → {fp})."
+      "Trance": "Resting reduces FP by {cut} ({before} → {fp}).",
+      "FeralExtended": "Feral State extended by {rounds} round(s).",
+      "CapHeldTitle": "Control Held",
+      "CapHeld": "You keep control until the end of your next turn.",
+      "FeralOn": "You lose control for <strong>{rounds}</strong> rounds. Resistance to nonmagical bludgeoning, piercing and slashing damage, and advantage on melee attacks (apply the advantage when rolling).",
+      "FeralEndsTitle": "Feral State Ends",
+      "FeralEnds": "Gain 2 levels of exhaustion (now {exhaustion}). FP resets to 0 and Blood Surge ends.",
+      "FeralSoftEnd": "FP dropped below the cap before a successful save. You come out of Feral State and keep your FP, with no exhaustion.",
+      "FeralLeft": "{rounds} round(s) of Feral State left.",
+      "FeralTurn": "Feral turn {n} of {total}. Instability decides this turn's course of action.",
+      "CalmFailed": "You fail to calm down. FP is now {fp}.",
+      "SaveSkipped": "You gained FP this turn, so there's no end-of-turn save.",
+      "CombatEndedFeral": "Combat ended while in Feral State. Use <i>Calm down</i> on the Ferality tab: make a Blood Surge save each round until you succeed or your FP falls below the cap."
     },
     "Warn": {
       "SurgeLevel": "Blood Surge unlocks at Witch-Blade level 2.",
@@ -68,26 +82,57 @@
       "Disadvantage": "Disadvantage",
       "GainedNote": "You gained FP this turn. By the class rules this save is optional, so you can close this window.",
       "EndTurnText": "Wisdom save. Success: reduce FP by 1. Failure: gain 1 FP and draw from Feral Instability.",
-      "PickOutcome": "Which outcome happened?"
+      "PickOutcome": "Which outcome happened?",
+      "CapText": "You're at {fp}/{cap} FP. On a success you keep control until the end of your next turn. On a failure you enter Feral State for 1d4{extra} rounds.",
+      "CalmText": "Blood Surge save to come out of Feral State. On a failure you roll Instability and lose 1 FP."
     },
     "Info": {
       "TableCreated": "Witch-Blade: created the \"{name}\" Rollable Table.",
-      "Synced": "Witch-Blade items: {created} added, {updated} refreshed, {deleted} removed."
+      "Synced": "Witch-Blade items: {created} added, {updated} refreshed, {deleted} removed.",
+      "Enabled": "{name} is now a Witch-Blade.",
+      "Disabled": "{name} is no longer marked as a Witch-Blade."
     },
     "Item": {
       "BloodSurge": "Bonus action. For 1 minute: +5 STR (DEX for Seekers), melee attacks deal extra force damage (1d4, +1d4 per proficiency increase), advantage on STR checks and saves, and access to surge techniques. Gain 1 FP. Uses equal to your proficiency bonus per short rest. Using this again ends the surge.",
-      "EndTurnSave": "At the end of each turn in Blood Surge, if you have not gained FP, you can make a DC 13 Wisdom save. Success: reduce FP by 1 and optionally end Blood Surge. Failure: gain 1 FP and roll on the Feral Instability table."
+      "EndTurnSave": "At the end of each turn in Blood Surge, if you have not gained FP, you can make a DC 13 Wisdom save. Success: reduce FP by 1 and optionally end Blood Surge. Failure: gain 1 FP and roll on the Feral Instability table.",
+      "CapSave": "When you reach your Ferality cap, make a Wisdom save (DC 13 + 1 per FP over the cap). On a success you keep control until the end of your next turn. On a failure you enter Feral State for 1d4 rounds + 1 per FP over the cap. The module prompts for this automatically; use this to roll it by hand.",
+      "Feral": "Resistance to nonmagical damage and advantage on melee attacks. Roll on Feral Instability at the start of each turn. When it ends: 2 levels of exhaustion, FP resets to 0, roll a Feral Mutation."
+    },
+    "Exhaustion": "Exhaustion",
+    "CapSave": "Ferality Cap Save",
+    "RollCapSave": "Roll cap save",
+    "FeralState": "Feral State",
+    "FeralTurn": "Feral turn",
+    "CalmDown": "Calm down",
+    "EndFeral": "End Feral State (GM)",
+    "Mutations": "Feral Mutations",
+    "Mutation": "Mutation",
+    "RemoveMutation": "Remove mutation (for example after a Lysis purge)",
+    "ToggleActor": "Witch-Blade: turn on/off for this character",
+    "Banner": {
+      "Cap": "<b>Ferality cap reached.</b> Make the Ferality Cap Save at DC {dc}. If you fail, you enter Feral State for 1d4{extra} rounds.",
+      "Held": "<b>Control held</b> until the end of your next turn. While you're at or over the cap, you roll on Feral Instability at the end of each turn.",
+      "Feral": "<b>Feral State</b>: {rounds} of {total} rounds left. The DM controls your actions. Use <i>Feral turn</i> for each turn, or <i>Calm down</i> once combat is over.",
+      "FeralCombat": "<b>Feral State</b>: {rounds} of {total} rounds left. The DM controls your actions. Instability is rolled at the start of each of your turns, and rounds count down at the end."
     },
     "Settings": {
-      "CreateTables": {
+      "createTables": {
         "Name": "Create Witch-Blade tables",
         "Hint": "When a GM loads the world, create the \"Feral Instability\" and \"Feral Mutations\" Rollable Tables if they don't exist."
       },
-      "TechniqueItems": {
+      "techniqueItems": {
         "Name": "Add surge techniques as feature items",
         "Hint": "Adds each available surge technique to Witch-Blade characters as a feature item, so it shows in Argon Combat HUD and the Features tab. Blood Surge and the End-of-Turn Save are always added."
       },
-      "Trance": {
+      "automateTurns": {
+        "Name": "Automate combat turns",
+        "Hint": "In combat, run the Witch-Blade turn steps automatically: Feral Instability at the start of Feral turns, Feral rounds counting down, Instability and re-saves at the cap, and the end-of-turn save prompt."
+      },
+      "promptEndTurn": {
+        "Name": "Prompt the end-of-turn save",
+        "Hint": "At the end of a Witch-Blade's turn in Blood Surge, open the DC 13 Wisdom save dialog, unless she gained FP that turn. Needs 'Automate combat turns'."
+      },
+      "tranceRest": {
         "Name": "Trance reduces Ferality on",
         "Hint": "FP drops by half the Witch-Blade level when resting. Choose which rests count.",
         "Long": "Long rest only",

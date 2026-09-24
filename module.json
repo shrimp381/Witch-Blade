@@ -1,8 +1,8 @@
 {
   "id": "witch-blade",
   "title": "Witch-Blade",
-  "description": "Character sheet support for the Witch-Blade homebrew class for D&D 5e: a Ferality tab with a level-scaled FP gauge, Blood Surge, the end-of-turn Wisdom save, Feral Instability table draws, and live-filtered surge techniques. Generates standard feature items so everything also works from Argon Combat HUD.",
-  "version": "0.1.0",
+  "description": "Character sheet support for the Witch-Blade homebrew class for D&D 5e. Adds a Ferality tab to the default character sheet or Tidy 5e Sheets, with a level-scaled FP gauge, Blood Surge, the end-of-turn and Ferality cap saves, automated Feral State, Feral Instability and Mutation tables, and live-filtered surge techniques. Generates standard feature items so everything also works from Argon Combat HUD.",
+  "version": "0.2.0",
   "compatibility": {
     "minimum": "13",
     "verified": "13"
@@ -25,9 +25,14 @@
     ],
     "recommends": [
       {
+        "id": "tidy5e-sheet",
+        "type": "module",
+        "reason": "Adds the Ferality tab and a Surge Techniques section to Tidy 5e character sheets."
+      },
+      {
         "id": "enhancedcombathud-dnd5e",
         "type": "module",
-        "reason": "Shows Blood Surge, the End-of-Turn Save and surge techniques as Argon Combat HUD buttons."
+        "reason": "Shows Blood Surge, the saves and surge techniques as Argon Combat HUD buttons."
       }
     ]
   },

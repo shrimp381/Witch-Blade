@@ -16,26 +16,24 @@
  * cancels the default chat card. No other module is required.
  */
 
-import { TECHNIQUES, ACTION_LABELS } from "./data.js";
+import { ACTION_LABELS, ICONS } from "./data.js";
 import {
-  MODULE_ID, SURGE_ICON, t, wbLevel, wbSubclass, availableTechniques,
-  toggleBloodSurge, endOfTurnSave, useTechnique
+  MODULE_ID, t, availableTechniques,
+  toggleBloodSurge, endOfTurnSave, useTechnique, capSave
 } from "./mechanics.js";
+
+const TIDY_ID = "tidy5e-sheet";
 
 const ACTIVATION = { action: "action", bonus: "bonus", reaction: "reaction", free: "special" };
 
-const TECH_ICONS = {
-  action: "icons/skills/melee/strike-sword-blood-red.webp",
-  bonus: "icons/skills/movement/figure-running-gray.webp",
-  reaction: "icons/skills/melee/shield-block-gray-orange.webp",
-  free: "icons/magic/control/fear-fright-monster-grin-red-orange.webp"
-};
 
 /* -------------------------------------------- */
 /*  Item definitions                            */
 /* -------------------------------------------- */
 
 function itemData({ key, name, img, activation, description, requirements, uses, technique }) {
+  // Surge techniques get their own section in Tidy 5e's Features and Actions tabs.
+  const tidy = technique ? { [TIDY_ID]: { section: t("Techniques"), actionSection: t("Techniques") } } : {};
   const activityId = "wbActivity000000"; // 16 chars, stable so updates can target it
   return {
     name,
@@ -58,7 +56,8 @@ function itemData({ key, name, img, activation, description, requirements, uses,
       }
     },
     flags: {
-      [MODULE_ID]: { ability: key, ...(technique ? { technique } : {}), version: moduleVersion() }
+      [MODULE_ID]: { ability: key, ...(technique ? { technique } : {}), version: moduleVersion() },
+      ...tidy
     }
   };
 }
@@ -72,7 +71,7 @@ function desiredItems(actor) {
     itemData({
       key: "bloodSurge",
       name: t("BloodSurge"),
-      img: SURGE_ICON,
+      img: ICONS.bloodSurge,
       activation: "bonus",
       requirements: "Witch-Blade 2",
       uses: { max: "@prof", spent: 0, recovery: [{ period: "sr", type: "recoverAll" }] },
@@ -81,20 +80,28 @@ function desiredItems(actor) {
     itemData({
       key: "endTurnSave",
       name: t("EndTurnSave"),
-      img: "icons/magic/control/silhouette-hold-change-blue.webp",
+      img: ICONS.endTurnSave,
       activation: "special",
       requirements: "Witch-Blade 2",
       description: `<p>${t("Item.EndTurnSave")}</p>`
+    }),
+    itemData({
+      key: "capSave",
+      name: t("CapSave"),
+      img: ICONS.capSave,
+      activation: "special",
+      requirements: "Witch-Blade 1",
+      description: `<p>${t("Item.CapSave")}</p>`
     })
   ];
 
   if (game.settings.get(MODULE_ID, "techniqueItems")) {
-    for (const tech of availableTechniques(actor, { includeAdvanced: false })) {
+    for (const tech of availableTechniques(actor, { respectLevel: true })) {
       items.push(itemData({
         key: "technique",
         technique: tech.id,
         name: tech.name,
-        img: TECH_ICONS[tech.action],
+        img: tech.img,
         activation: ACTIVATION[tech.action],
         requirements: `Surge Technique · ${tech.req}+ FP${tech.tier === "advanced" ? " · Level 11" : ""}`,
         description: `<p><strong>${ACTION_LABELS[tech.action]} · ${tech.req}+ FP · FP ${tech.fp.map(o => (o.d > 0 ? "+" : "") + o.d).join(" / ")}</strong></p><p>${tech.text}</p>`
@@ -117,10 +124,14 @@ const docKey = item => {
 /*  Sync                                        */
 /* -------------------------------------------- */
 
-/** An actor counts as a Witch-Blade if it has the class item or uses the Witch-Blade sheet. */
+/**
+ * An actor counts as a Witch-Blade if it has a class with identifier "witch-blade",
+ * uses the Witch-Blade sheet, or was switched on from the Actors sidebar.
+ */
 export function isWitchBlade(actor) {
   if (actor?.type !== "character") return false;
   if (actor.classes?.[MODULE_ID]) return true;
+  if (actor.getFlag(MODULE_ID, "enabled")) return true;
   return actor.getFlag("core", "sheetClass") === `${MODULE_ID}.WitchBladeSheet`;
 }
 
@@ -151,9 +162,12 @@ export async function syncAbilityItems(actor, { force = false } = {}) {
         const existingActivity = i.system.activities?.get?.(activityId);
         const update = {
           _id: i.id,
+          name: d.name,
+          img: d.img,
           "system.description.value": d.system.description.value,
           "system.requirements": d.system.requirements,
-          [`flags.${MODULE_ID}.version`]: version
+          [`flags.${MODULE_ID}.version`]: version,
+          ...(d.flags[TIDY_ID] ? { [`flags.${TIDY_ID}.section`]: d.flags[TIDY_ID].section, [`flags.${TIDY_ID}.actionSection`]: d.flags[TIDY_ID].actionSection } : {})
         };
         if (existingActivity) update[`system.activities.${activityId}.activation.type`] = activity.activation.type;
         return update;
@@ -178,6 +192,7 @@ export async function runAbility(item, actor = item?.actor) {
   switch (item.getFlag(MODULE_ID, "ability")) {
     case "bloodSurge": return toggleBloodSurge(actor);
     case "endTurnSave": return endOfTurnSave(actor);
+    case "capSave": return capSave(actor);
     case "technique": return useTechnique(actor, item.getFlag(MODULE_ID, "technique"));
   }
 }
@@ -206,7 +221,8 @@ export function registerAbilityHooks() {
     if (userId !== game.user.id) return;
     const subChanged = foundry.utils.hasProperty(changes, `flags.${MODULE_ID}.subclass`);
     const sheetChanged = foundry.utils.hasProperty(changes, "flags.core.sheetClass");
-    if (subChanged || sheetChanged) syncAbilityItems(actor);
+    const enabledChanged = foundry.utils.hasProperty(changes, `flags.${MODULE_ID}.enabled`);
+    if (subChanged || sheetChanged || enabledChanged) syncAbilityItems(actor);
   });
 
   Hooks.on("createActor", (actor, _opts, userId) => {

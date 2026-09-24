@@ -1,29 +1,64 @@
 /**
- * Witch-Blade: custom D&D 5e character sheet for the Witch-Blade homebrew class.
+ * Witch-Blade: sheet support for the Witch-Blade homebrew class (D&D 5e).
  *
- * Extends the dnd5e 5.x CharacterActorSheet (ApplicationV2) with a "Ferality"
- * tab. Every stock tab (inventory, features, spells, …) is left as it is.
+ * Two ways to show the Ferality tab:
+ *   1. "Witch-Blade Character Sheet": extends the dnd5e 5.x CharacterActorSheet
+ *      (ApplicationV2) with a Ferality tab and a Surge Techniques features section.
+ *   2. Tidy 5e Sheets: a Ferality tab registered through Tidy's API, shown on
+ *      any Witch-Blade character using a Tidy character sheet.
  *
  * Ferality Points are stored at actor.system.resources.secondary.value.
- * The cap comes from Witch-Blade level and is written back to .max so the
- * sheet's own resource display shows the right number.
  */
 
+import { INSTABILITY, MUTATIONS, TECHNIQUES, ICONS, feralityCap } from "./data.js";
 import {
-  feralityCap, proficiencyFor, SUBCLASSES, SURGE_SAVE_DC, INSTABILITY, MUTATIONS, TECHNIQUES
-} from "./data.js";
-import {
-  MODULE_ID, INSTABILITY_TABLE, MUTATION_TABLE, SURGE_ICON, t, tf, signed,
-  wbLevel, wbSubclass, getFp, setFp, surgeEffect, surgeUses, chat,
-  techniqueLock, availableTechniques,
-  toggleBloodSurge, endOfTurnSave, useTechnique, drawInstability
+  MODULE_ID, INSTABILITY_TABLE, MUTATION_TABLE, t, tf, wbLevel, getFp, setFp, chat,
+  toggleBloodSurge, endOfTurnSave, useTechnique, drawInstability, capSave,
+  enterFeral, exitFeral, feralTurn, calmFeral, feralState,
+  isResponsibleUser, onTurnStart, onTurnEnd
 } from "./mechanics.js";
 import { syncAbilityItems, runAbility, registerAbilityHooks, isWitchBlade } from "./abilities.js";
+import { BODY_TEMPLATE, prepareTabContext, bindTab } from "./tab.js";
 
 const TEMPLATE = `modules/${MODULE_ID}/templates/witchblade-ui.hbs`;
+const SURGE_SECTION = "wb-surge";
 
 /* -------------------------------------------- */
-/*  Sheet                                       */
+/*  Shared                                      */
+/* -------------------------------------------- */
+
+/** Keep the stored resource max/label matched to the level-based cap. */
+const resourceSyncing = new Set();
+async function syncFeralityResource(actor) {
+  if (!actor?.isOwner || resourceSyncing.has(actor.id)) return;
+  const res = actor.system.resources?.secondary ?? {};
+  const cap = feralityCap(wbLevel(actor));
+  const label = t("Ferality");
+  if (res.max === cap && res.label === label && !res.sr && !res.lr) return;
+  resourceSyncing.add(actor.id);
+  try {
+    await actor.update({
+      "system.resources.secondary.max": cap,
+      "system.resources.secondary.label": label,
+      "system.resources.secondary.sr": false,
+      "system.resources.secondary.lr": false
+    });
+  } finally {
+    resourceSyncing.delete(actor.id);
+  }
+}
+
+/** First time a Witch-Blade tab renders for an actor this session: set up resource and items. */
+const prepared = new Set();
+function ensurePrepared(actor) {
+  syncFeralityResource(actor);
+  if (prepared.has(actor.uuid) || !actor.isOwner) return;
+  prepared.add(actor.uuid);
+  syncAbilityItems(actor);
+}
+
+/* -------------------------------------------- */
+/*  dnd5e sheet variant                         */
 /* -------------------------------------------- */
 
 function defineSheet() {
@@ -36,6 +71,7 @@ function defineSheet() {
       PARTS.witchblade = {
         container: { classes: ["tab-body"], id: "tabs" },
         template: TEMPLATE,
+        templates: [BODY_TEMPLATE],
         scrollable: [""]
       };
     }
@@ -43,20 +79,7 @@ function defineSheet() {
   }
 
   return class WitchBladeSheet extends Base {
-    static DEFAULT_OPTIONS = {
-      classes: ["witch-blade-sheet"],
-      actions: {
-        wbSetFp: WitchBladeSheet.#onSetFp,
-        wbStepFp: WitchBladeSheet.#onStepFp,
-        wbBloodSurge: WitchBladeSheet.#onBloodSurge,
-        wbEndTurnSave: WitchBladeSheet.#onEndTurnSave,
-        wbFilter: WitchBladeSheet.#onFilter,
-        wbToggleTech: WitchBladeSheet.#onToggleTech,
-        wbUseTech: WitchBladeSheet.#onUseTech,
-        wbToggleLocked: WitchBladeSheet.#onToggleLocked,
-        wbSync: WitchBladeSheet.#onSync
-      }
-    };
+    static DEFAULT_OPTIONS = { classes: ["witch-blade-sheet"] };
 
     static PARTS = PARTS;
 
@@ -65,160 +88,79 @@ function defineSheet() {
       { tab: "witchblade", label: "WITCHBLADE.Tab", icon: "fas fa-droplet" }
     ];
 
-    /** Per-sheet view state (not saved). */
-    _wb = { filter: "all", open: null, showLocked: true, syncing: false, itemsChecked: false };
-
     /** @inheritDoc */
     async _preparePartContext(partId, context, options) {
       context = await super._preparePartContext(partId, context, options);
-      if (partId === "witchblade") context.wb = this._prepareWitchBlade();
+      if (partId === "witchblade") context.wb = prepareTabContext(this.actor, { editable: this.isEditable });
       return context;
     }
 
-    _prepareWitchBlade() {
-      const actor = this.actor;
-      const level = wbLevel(actor);
-      const cap = feralityCap(level);
-      const fp = getFp(actor);
-      const over = Math.max(0, fp - cap);
-      const surging = !!surgeEffect(actor);
-      const uses = surgeUses(actor);
-      const sub = wbSubclass(actor);
-      const prof = proficiencyFor(level);
+    /** Give surge techniques their own section in the Features tab. */
+    async _prepareFeaturesContext(context, options) {
+      context = await super._prepareFeaturesContext(context, options);
+      const hasTechniques = this.actor.items.some(i => i.getFlag(MODULE_ID, "ability") === "technique");
+      if (!hasTechniques || !Array.isArray(context.sections)) return context;
+      const columns = context.sections[0]?.columns ?? [];
+      context.sections.push({
+        id: SURGE_SECTION,
+        label: "WITCHBLADE.Techniques",
+        order: 50,
+        columns,
+        items: [],
+        groups: { origin: SURGE_SECTION, activation: SURGE_SECTION },
+        dataset: { "group-origin": SURGE_SECTION, "group-activation": SURGE_SECTION }
+      });
+      context.sections.sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
+      return context;
+    }
 
-      // Gauge: one node per point up to the cap, plus a spare past the cap once you reach it.
-      const total = Math.max(cap, fp) + (fp >= cap ? 1 : 0);
-      const nodes = Array.fromRange(total, 1).map(n => ({
-        n, on: n <= fp, over: n > cap, near: n >= cap - 1 && n <= cap, capMark: n === cap + 1
-      }));
-
-      let state = { cls: "calm", label: t("State.Calm") };
-      if (fp >= cap) state = { cls: "cap", label: over ? tf("State.Over", { over }) : t("State.Cap") };
-      else if (surging) state = { cls: "surge", label: t("BloodSurge") };
-
-      const all = availableTechniques(actor)
-        .map(x => {
-          const lock = techniqueLock(actor, x);
-          return {
-            ...x,
-            lock,
-            ready: !lock,
-            open: this._wb.open === x.id,
-            actionLabel: t(`Action.${x.action}`),
-            groupLabel: x.group === "core" ? t("Core") : SUBCLASSES[x.group],
-            advanced: x.tier === "advanced",
-            deltas: x.fp.map((o, i) => ({
-              i, d: o.d, text: signed(o.d), label: o.label,
-              cls: o.d > 0 ? "up" : o.d < 0 ? "down" : "", primary: i === 0
-            }))
-          };
-        })
-        .sort((a, b) => (a.tier === b.tier ? 0 : a.advanced ? 1 : -1) || a.req - b.req);
-
-      const techniques = all.filter(x =>
-        (this._wb.filter === "all" || x.action === this._wb.filter) && (this._wb.showLocked || x.ready));
-
-      const filters = ["all", "action", "bonus", "reaction", "free"].map(f => ({
-        id: f, label: f === "all" ? t("All") : t(`Action.${f}`), active: this._wb.filter === f
-      }));
-
-      const stat = sub.key === "seeker" ? "DEX" : "STR";
-      return {
-        editable: this.isEditable,
-        level, cap, fp, over, prof, surging, uses, nodes, state,
-        atCap: fp >= cap,
-        capDc: SURGE_SAVE_DC + over,
-        surgeDc: SURGE_SAVE_DC,
-        surgeSummary: tf(surging ? "SurgeActive" : "SurgeIdle", { stat, dice: Math.max(1, prof - 1), uses: uses.max }),
-        canSurge: this.isEditable && (surging || (level >= 2 && uses.value > 0)),
-        canSave: this.isEditable && surging,
-        subclass: sub.key,
-        subclassFromItem: sub.fromItem,
-        subclassLabel: SUBCLASSES[sub.key] ?? "",
-        subclassOptions: Object.entries(SUBCLASSES).map(([value, label]) => ({ value, label, selected: value === sub.key })),
-        filters,
-        showLocked: this._wb.showLocked,
-        techniques,
-        readyCount: all.filter(x => x.ready).length,
-        emptyText: surging ? t("EmptyFilter") : t("EmptySurge")
-      };
+    /** Route technique items to that section, and the core abilities under the Witch-Blade class. */
+    async _prepareItemFeature(item, ctx) {
+      await super._prepareItemFeature(item, ctx);
+      const ability = item.getFlag?.(MODULE_ID, "ability");
+      if (!ability || !ctx.groups) return;
+      if (ability === "technique") {
+        ctx.groups.origin = SURGE_SECTION;
+        ctx.groups.activation = SURGE_SECTION;
+      } else if (this.actor.classes?.[MODULE_ID]) {
+        ctx.groups.origin = MODULE_ID;
+      }
     }
 
     /** @inheritDoc */
     _onRender(context, options) {
       super._onRender(context, options);
-      this._syncFeralityResource();
-      if (!this._wb.itemsChecked && this.isEditable) {
-        this._wb.itemsChecked = true;
-        syncAbilityItems(this.actor);
-      }
-    }
-
-    /** Keep the stored resource max/label matched to the level-based cap. */
-    async _syncFeralityResource() {
-      if (!this.isEditable || this._wb.syncing) return;
-      const res = this.actor.system.resources?.secondary ?? {};
-      const cap = feralityCap(wbLevel(this.actor));
-      const label = t("Ferality");
-      if (res.max === cap && res.label === label && !res.sr && !res.lr) return;
-      this._wb.syncing = true;
-      try {
-        await this.actor.update({
-          "system.resources.secondary.max": cap,
-          "system.resources.secondary.label": label,
-          "system.resources.secondary.sr": false,
-          "system.resources.secondary.lr": false
-        });
-      } finally {
-        this._wb.syncing = false;
-      }
-    }
-
-    /* ---------- Actions ---------- */
-
-    static async #onSetFp(event, target) {
-      const n = Number(target.dataset.value);
-      await setFp(this.actor, getFp(this.actor) === n ? n - 1 : n);
-    }
-
-    static async #onStepFp(event, target) {
-      await setFp(this.actor, getFp(this.actor) + Number(target.dataset.step));
-    }
-
-    static async #onBloodSurge() {
-      await toggleBloodSurge(this.actor);
-    }
-
-    static async #onEndTurnSave() {
-      await endOfTurnSave(this.actor);
-    }
-
-    static #onFilter(event, target) {
-      this._wb.filter = target.dataset.filter;
-      this.render({ parts: ["witchblade"] });
-    }
-
-    static #onToggleLocked() {
-      this._wb.showLocked = !this._wb.showLocked;
-      this.render({ parts: ["witchblade"] });
-    }
-
-    static #onToggleTech(event, target) {
-      const id = target.closest("[data-tech]")?.dataset.tech;
-      this._wb.open = this._wb.open === id ? null : id;
-      this.render({ parts: ["witchblade"] });
-    }
-
-    static async #onUseTech(event, target) {
-      const id = target.closest("[data-tech]")?.dataset.tech;
-      await useTechnique(this.actor, id, Number(target.dataset.option) || 0);
-    }
-
-    static async #onSync() {
-      const r = await syncAbilityItems(this.actor, { force: true });
-      if (r) ui.notifications.info(tf("Info.Synced", r));
+      bindTab(this.element, this.actor, () => this.render({ parts: ["witchblade"] }));
+      if (this.isEditable) ensurePrepared(this.actor);
     }
   };
+}
+
+/* -------------------------------------------- */
+/*  Tidy 5e Sheets variant                      */
+/* -------------------------------------------- */
+
+function registerTidyTab(api) {
+  api.registerCharacterTab(
+    new api.models.HandlebarsTab({
+      title: "WITCHBLADE.Tab",
+      tabId: `${MODULE_ID}-ferality`,
+      iconClass: "fa-solid fa-droplet",
+      path: `/${BODY_TEMPLATE}`,
+      tabContentsClasses: ["wb-tidy-tab"],
+      enabled: context => isWitchBlade(context.actor),
+      getData: context => ({
+        ...context,
+        wb: prepareTabContext(context.actor, { editable: context.editable ?? context.actor?.isOwner })
+      }),
+      onRender: params => {
+        const actor = params.data?.actor ?? params.app?.actor ?? params.app?.document;
+        if (!actor) return;
+        bindTab(params.tabContentsElement, actor, () => params.app.render());
+        if (actor.isOwner) ensurePrepared(actor);
+      }
+    })
+  );
 }
 
 /* -------------------------------------------- */
@@ -231,7 +173,7 @@ async function ensureTables() {
   if (!game.tables.getName(INSTABILITY_TABLE)) {
     await RollTable.create({
       name: INSTABILITY_TABLE,
-      img: SURGE_ICON,
+      img: ICONS.bloodSurge,
       formula: "1d10",
       replacement: true,
       displayRoll: true,
@@ -242,7 +184,7 @@ async function ensureTables() {
         weight: 1,
         name: r.name,
         description: `<strong>${r.name}.</strong> ${r.text}`,
-        flags: r.fp ? { [MODULE_ID]: { fp: r.fp } } : {}
+        flags: (r.fp || r.feralRounds) ? { [MODULE_ID]: { fp: r.fp ?? 0, feralRounds: r.feralRounds ?? 0 } } : {}
       }))
     });
     ui.notifications.info(tf("Info.TableCreated", { name: INSTABILITY_TABLE }));
@@ -251,7 +193,7 @@ async function ensureTables() {
   if (!game.tables.getName(MUTATION_TABLE)) {
     await RollTable.create({
       name: MUTATION_TABLE,
-      img: SURGE_ICON,
+      img: ICONS.feral,
       formula: "1d100",
       replacement: true,
       displayRoll: true,
@@ -269,28 +211,45 @@ async function ensureTables() {
 }
 
 /* -------------------------------------------- */
+/*  Actors sidebar: switch a character on/off   */
+/* -------------------------------------------- */
+
+function actorContextOption(app, options) {
+  const actorFrom = li => game.actors.get(li?.dataset?.entryId ?? li?.dataset?.documentId ?? li?.[0]?.dataset?.entryId);
+  options.push({
+    name: "WITCHBLADE.ToggleActor",
+    icon: '<i class="fa-solid fa-droplet"></i>',
+    condition: li => {
+      const actor = actorFrom(li);
+      return actor?.type === "character" && actor.isOwner && !actor.classes?.[MODULE_ID];
+    },
+    callback: async li => {
+      const actor = actorFrom(li);
+      const on = !actor.getFlag(MODULE_ID, "enabled");
+      await actor.setFlag(MODULE_ID, "enabled", on);
+      ui.notifications.info(tf(on ? "Info.Enabled" : "Info.Disabled", { name: actor.name }));
+    }
+  });
+}
+
+/* -------------------------------------------- */
 /*  Hooks                                       */
 /* -------------------------------------------- */
 
 Hooks.once("init", () => {
-  game.settings.register(MODULE_ID, "createTables", {
-    name: "WITCHBLADE.Settings.CreateTables.Name",
-    hint: "WITCHBLADE.Settings.CreateTables.Hint",
-    scope: "world", config: true, type: Boolean, default: true
+  const setting = (key, data) => game.settings.register(MODULE_ID, key, {
+    name: `WITCHBLADE.Settings.${key}.Name`, hint: `WITCHBLADE.Settings.${key}.Hint`, scope: "world", config: true, ...data
   });
-  game.settings.register(MODULE_ID, "techniqueItems", {
-    name: "WITCHBLADE.Settings.TechniqueItems.Name",
-    hint: "WITCHBLADE.Settings.TechniqueItems.Hint",
-    scope: "world", config: true, type: Boolean, default: true
-  });
-  game.settings.register(MODULE_ID, "tranceRest", {
-    name: "WITCHBLADE.Settings.Trance.Name",
-    hint: "WITCHBLADE.Settings.Trance.Hint",
-    scope: "world", config: true, type: String, default: "long",
+  setting("createTables", { type: Boolean, default: true });
+  setting("techniqueItems", { type: Boolean, default: true });
+  setting("automateTurns", { type: Boolean, default: true });
+  setting("promptEndTurn", { type: Boolean, default: true });
+  setting("tranceRest", {
+    type: String, default: "long",
     choices: {
-      long: "WITCHBLADE.Settings.Trance.Long",
-      both: "WITCHBLADE.Settings.Trance.Both",
-      none: "WITCHBLADE.Settings.Trance.None"
+      long: "WITCHBLADE.Settings.tranceRest.Long",
+      both: "WITCHBLADE.Settings.tranceRest.Both",
+      none: "WITCHBLADE.Settings.tranceRest.None"
     }
   });
 
@@ -306,12 +265,38 @@ Hooks.once("init", () => {
   game.modules.get(MODULE_ID).api = {
     WitchBladeSheet,
     toggleBloodSurge, endOfTurnSave, useTechnique, drawInstability, runAbility,
+    capSave, enterFeral, exitFeral, feralTurn, calmFeral,
     syncAbilityItems, isWitchBlade, feralityCap, getFp, setFp,
     TECHNIQUES
   };
 });
 
+Hooks.once("tidy5e-sheet.ready", registerTidyTab);
 Hooks.once("ready", ensureTables);
+Hooks.on("getActorContextOptions", actorContextOption);
+Hooks.on("getActorDirectoryEntryContext", actorContextOption);
+
+/** Combat: run end-of-turn and start-of-turn Witch-Blade steps on one client. */
+Hooks.on("updateCombat", async (combat, changed, options) => {
+  if (!game.settings.get(MODULE_ID, "automateTurns") || !combat.started) return;
+  if (!("turn" in changed || "round" in changed) || options?.direction === -1) return;
+
+  const prev = combat.combatants.get(combat.previous?.combatantId)?.actor;
+  if (prev && isWitchBlade(prev) && isResponsibleUser(prev)) await onTurnEnd(prev, combat);
+
+  const next = combat.combatant?.actor;
+  if (next && isWitchBlade(next) && isResponsibleUser(next)) await onTurnStart(next);
+});
+
+/** Combat ended while Feral: point to the out-of-combat rule. */
+Hooks.on("deleteCombat", combat => {
+  for (const c of combat.combatants) {
+    const actor = c.actor;
+    if (actor && feralState(actor) && isWitchBlade(actor) && isResponsibleUser(actor)) {
+      chat(actor, t("FeralState"), `<p>${t("Chat.CombatEndedFeral")}</p>`, "", "feral");
+    }
+  }
+});
 
 /** Rests: restore the flag-based uses fallback; trance reduces FP by half Witch-Blade level. */
 Hooks.on("dnd5e.restCompleted", async (actor, result) => {

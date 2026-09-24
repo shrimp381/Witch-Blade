@@ -1,0 +1,142 @@
+{{!-- Ferality tab body. Shared by the dnd5e sheet and Tidy 5e Sheets. Expects `wb` in context. --}}
+<div class="wb-root">
+  {{#with wb}}
+  <header class="wb-strip">
+    <div class="wb-stat"><span>{{localize "WITCHBLADE.Level"}}</span><b>{{level}}</b></div>
+    <div class="wb-stat wb-sub">
+      <span>{{localize "WITCHBLADE.Subclass"}}</span>
+      {{#if subclassFromItem}}
+        <b>{{subclassLabel}}</b>
+      {{else}}
+        <select data-wb-change="subclass" aria-label="{{localize 'WITCHBLADE.Subclass'}}" {{#unless editable}}disabled{{/unless}}>
+          <option value="">{{localize "WITCHBLADE.NoSubclass"}}</option>
+          {{#each subclassOptions}}<option value="{{value}}" {{#if selected}}selected{{/if}}>{{label}}</option>{{/each}}
+        </select>
+      {{/if}}
+    </div>
+    <div class="wb-stat"><span>{{localize "WITCHBLADE.Prof"}}</span><b>+{{prof}}</b></div>
+    <div class="wb-stat"><span>{{localize "WITCHBLADE.Cap"}}</span><b>{{cap}}</b></div>
+    <div class="wb-stat"><span>{{localize "WITCHBLADE.Exhaustion"}}</span><b>{{exhaustion}}</b></div>
+  </header>
+
+  <div class="wb-panel wb-gauge">
+    <div class="wb-gauge-head">
+      <h3>{{localize "WITCHBLADE.Ferality"}}</h3>
+      <div class="wb-fp">{{fp}}<small> / {{cap}}</small></div>
+      <span class="wb-pill {{state.cls}}">{{state.label}}</span>
+      {{#if editable}}
+      <div class="wb-stepper">
+        <button type="button" data-wb-action="stepFp" data-step="-1" aria-label="{{localize 'WITCHBLADE.FpDown'}}" {{#unless fp}}disabled{{/unless}}>−</button>
+        <button type="button" data-wb-action="stepFp" data-step="1" aria-label="{{localize 'WITCHBLADE.FpUp'}}">+</button>
+      </div>
+      {{/if}}
+    </div>
+
+    <div class="wb-nodes" role="group" aria-label="{{localize 'WITCHBLADE.Ferality'}}">
+      {{#each nodes}}
+        {{#if capMark}}<span class="wb-cap-mark" aria-hidden="true"></span>{{/if}}
+        <button type="button" class="wb-node {{#if on}}on{{/if}} {{#if over}}over{{/if}} {{#if near}}near{{/if}}"
+                data-wb-action="setFp" data-value="{{n}}" data-n="{{n}}" aria-label="FP {{n}}"
+                {{#unless ../editable}}disabled{{/unless}}></button>
+      {{/each}}
+    </div>
+
+    {{#if banner}}
+    <div class="wb-warn {{banner.cls}}">
+      <p>{{{banner.html}}}</p>
+      {{#if showCapSave}}
+      <button type="button" class="wb-btn brass" data-wb-action="capSave">{{localize "WITCHBLADE.RollCapSave"}}</button>
+      {{/if}}
+      {{#if showFeralControls}}
+      <div class="wb-actions">
+        {{#unless inCombat}}
+        <button type="button" class="wb-btn brass" data-wb-action="feralTurn">{{localize "WITCHBLADE.FeralTurn"}}</button>
+        <button type="button" class="wb-btn" data-wb-action="calmFeral">{{localize "WITCHBLADE.CalmDown"}}</button>
+        {{/unless}}
+        {{#if isGM}}
+        <button type="button" class="wb-btn" data-wb-action="endFeral">{{localize "WITCHBLADE.EndFeral"}}</button>
+        {{/if}}
+      </div>
+      {{/if}}
+    </div>
+    {{/if}}
+
+    <div class="wb-actions">
+      <button type="button" class="wb-btn primary {{#if surging}}active{{/if}}" data-wb-action="bloodSurge" {{#unless canSurge}}disabled{{/unless}}>
+        {{#if surging}}{{localize "WITCHBLADE.EndSurge"}}{{else}}{{localize "WITCHBLADE.BloodSurge"}}{{/if}}
+        <small>{{uses.value}}/{{uses.max}}</small>
+      </button>
+      <button type="button" class="wb-btn" data-wb-action="endTurnSave" {{#unless canSave}}disabled{{/unless}}>
+        {{localize "WITCHBLADE.EndTurnSave"}} <small>DC {{surgeDc}}</small>
+      </button>
+    </div>
+    <p class="wb-summary">{{surgeSummary}}</p>
+  </div>
+
+  <div class="wb-panel wb-techniques">
+    <div class="wb-tech-head">
+      <h3>{{localize "WITCHBLADE.Techniques"}}</h3>
+      <span class="wb-count">{{readyCount}} {{localize "WITCHBLADE.Ready"}}</span>
+    </div>
+    <div class="wb-filters">
+      {{#each filters}}
+      <button type="button" class="wb-chip {{#if active}}active{{/if}}" data-wb-action="filter" data-filter="{{id}}" aria-pressed="{{active}}">{{label}}</button>
+      {{/each}}
+      <button type="button" class="wb-chip wb-locked-toggle {{#if showLocked}}active{{/if}}" data-wb-action="toggleLocked" aria-pressed="{{showLocked}}">{{localize "WITCHBLADE.ShowLocked"}}</button>
+    </div>
+
+    <ul class="wb-tech-list">
+      {{#each techniques}}
+      <li class="wb-tech {{#if ready}}ready{{else}}locked{{/if}}" data-tech="{{id}}">
+        <button type="button" class="wb-tech-row" data-wb-action="toggleTech" aria-expanded="{{open}}">
+          <img class="wb-ticon" src="{{img}}" alt="">
+          <span class="wb-req" data-tooltip="{{localize 'WITCHBLADE.FpRequired'}}">≥{{req}}</span>
+          <span class="wb-tname">{{name}}{{#if advanced}}<em>{{localize "WITCHBLADE.Advanced"}}</em>{{/if}}
+            <span class="wb-grp">{{groupLabel}}{{#if dc}} · DC {{dc}}{{/if}}</span></span>
+          <span class="wb-abadge {{#if actionAssumed}}assumed{{/if}}" {{#if actionAssumed}}data-tooltip="{{localize 'WITCHBLADE.ActionAssumed'}}"{{/if}}>{{actionLabel}}</span>
+          <span class="wb-delta">{{#each deltas}}<span class="{{cls}}">{{text}}</span>{{#unless @last}} / {{/unless}}{{/each}}</span>
+        </button>
+        {{#if open}}
+        <div class="wb-tech-body">
+          <p>{{text}}</p>
+          {{#if lock}}
+            <p class="wb-why">{{lock}}</p>
+          {{else if ../editable}}
+            <div class="wb-opts">
+              {{#each deltas}}
+              <button type="button" class="wb-btn {{#if primary}}primary{{/if}}" data-wb-action="useTech" data-option="{{i}}">
+                {{localize "WITCHBLADE.Use"}}{{#if label}}: {{label}}{{/if}} <small>{{text}} FP</small>
+              </button>
+              {{/each}}
+            </div>
+          {{/if}}
+        </div>
+        {{/if}}
+      </li>
+      {{else}}
+      <li class="wb-empty">{{emptyText}}</li>
+      {{/each}}
+    </ul>
+  </div>
+
+  {{#if mutations.length}}
+  <div class="wb-panel wb-mutations">
+    <h3>{{localize "WITCHBLADE.Mutations"}}</h3>
+    <ul>
+      {{#each mutations}}
+      <li>
+        <div><b>{{name}}</b> {{{text}}}</div>
+        {{#if ../editable}}<button type="button" class="wb-x" data-wb-action="removeMutation" data-id="{{id}}" aria-label="{{localize 'WITCHBLADE.RemoveMutation'}}" data-tooltip="{{localize 'WITCHBLADE.RemoveMutation'}}">×</button>{{/if}}
+      </li>
+      {{/each}}
+    </ul>
+  </div>
+  {{/if}}
+
+  {{#if editable}}
+  <footer class="wb-foot">
+    <button type="button" class="wb-link" data-wb-action="sync">{{localize "WITCHBLADE.SyncItems"}}</button>
+  </footer>
+  {{/if}}
+  {{/with}}
+</div>
