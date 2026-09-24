@@ -1,23 +1,15 @@
 {{!-- Ferality tab body. Shared by the dnd5e sheet and Tidy 5e Sheets. Expects `wb` in context. --}}
 <div class="wb-root">
   {{#with wb}}
-  <header class="wb-strip">
-    <div class="wb-stat"><span>{{localize "WITCHBLADE.Level"}}</span><b>{{level}}</b></div>
-    <div class="wb-stat wb-sub">
-      <span>{{localize "WITCHBLADE.Subclass"}}</span>
-      {{#if subclassFromItem}}
-        <b>{{subclassLabel}}</b>
-      {{else}}
-        <select data-wb-change="subclass" aria-label="{{localize 'WITCHBLADE.Subclass'}}" {{#unless editable}}disabled{{/unless}}>
-          <option value="">{{localize "WITCHBLADE.NoSubclass"}}</option>
-          {{#each subclassOptions}}<option value="{{value}}" {{#if selected}}selected{{/if}}>{{label}}</option>{{/each}}
-        </select>
-      {{/if}}
-    </div>
-    <div class="wb-stat"><span>{{localize "WITCHBLADE.Prof"}}</span><b>+{{prof}}</b></div>
-    <div class="wb-stat"><span>{{localize "WITCHBLADE.Cap"}}</span><b>{{cap}}</b></div>
-    <div class="wb-stat"><span>{{localize "WITCHBLADE.Exhaustion"}}</span><b>{{exhaustion}}</b></div>
-  </header>
+  {{#unless subclassFromItem}}
+  <div class="wb-subpick">
+    <label for="wb-subclass-{{level}}">{{localize "WITCHBLADE.Subclass"}}</label>
+    <select id="wb-subclass-{{level}}" data-wb-change="subclass" {{#unless editable}}disabled{{/unless}}>
+      <option value="">{{localize "WITCHBLADE.NoSubclass"}}</option>
+      {{#each subclassOptions}}<option value="{{value}}" {{#if selected}}selected{{/if}}>{{label}}</option>{{/each}}
+    </select>
+  </div>
+  {{/unless}}
 
   <div class="wb-panel wb-gauge">
     <div class="wb-gauge-head">
@@ -69,7 +61,16 @@
       <button type="button" class="wb-btn" data-wb-action="endTurnSave" {{#unless canSave}}disabled{{/unless}}>
         {{localize "WITCHBLADE.EndTurnSave"}} <small>DC {{surgeDc}}</small>
       </button>
+      {{#if editable}}
+      <button type="button" class="wb-btn" data-wb-action="rollInstability" data-tooltip="{{localize 'WITCHBLADE.RollInstabilityHint'}}">
+        <i class="fa-solid fa-dice-d10" inert></i> {{localize "WITCHBLADE.RollInstability"}}
+      </button>
+      <button type="button" class="wb-btn" data-wb-action="rollMutation" data-tooltip="{{localize 'WITCHBLADE.RollMutationHint'}}">
+        <i class="fa-solid fa-dna" inert></i> {{localize "WITCHBLADE.RollMutation"}}
+      </button>
+      {{/if}}
     </div>
+    {{#if gainedFp}}<p class="wb-unavailable">{{localize "WITCHBLADE.Lock.GainedFp"}}</p>{{/if}}
     <p class="wb-summary">{{surgeSummary}}</p>
   </div>
 
@@ -119,9 +120,12 @@
     </ul>
   </div>
 
-  {{#if mutations.length}}
+  {{#if showMutations}}
   <div class="wb-panel wb-mutations">
-    <h3>{{localize "WITCHBLADE.Mutations"}}</h3>
+    <div class="wb-tech-head">
+      <h3>{{localize "WITCHBLADE.Mutations"}}</h3>
+    </div>
+    {{#if mutations.length}}
     <ul>
       {{#each mutations}}
       <li>
@@ -130,6 +134,9 @@
       </li>
       {{/each}}
     </ul>
+    {{else}}
+    <p class="wb-empty">{{localize "WITCHBLADE.NoMutations"}}</p>
+    {{/if}}
   </div>
   {{/if}}
 

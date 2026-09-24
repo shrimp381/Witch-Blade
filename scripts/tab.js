@@ -9,9 +9,9 @@
 import { proficiencyFor, SUBCLASSES, SURGE_SAVE_DC } from "./data.js";
 import {
   MODULE_ID, t, tf, signed, wbLevel, wbSubclass, getFp, capOf, surgeEffect, surgeUses,
-  feralState, capHeld, mutations, techniqueLock, availableTechniques,
+  feralState, capHeld, mutations, techniqueLock, availableTechniques, gainedFpThisTurn,
   toggleBloodSurge, endOfTurnSave, useTechnique, changeFp, capSave,
-  feralTurn, calmFeral, exitFeral, removeMutation
+  feralTurn, calmFeral, exitFeral, removeMutation, drawMutation, rollInstability
 } from "./mechanics.js";
 import { syncAbilityItems } from "./abilities.js";
 
@@ -91,7 +91,8 @@ export function prepareTabContext(actor, { editable = actor.isOwner } = {}) {
     showFeralControls: editable && !!feral,
     surgeSummary: tf(surging ? "SurgeActive" : "SurgeIdle", { stat, dice: Math.max(1, prof - 1), uses: uses.max }),
     canSurge: editable && !feral && (surging || (level >= 2 && uses.value > 0)),
-    canSave: editable && surging && !feral,
+    gainedFp: surging && !feral && gainedFpThisTurn(actor),
+    canSave: editable && surging && !feral && !gainedFpThisTurn(actor),
     surgeDc: SURGE_SAVE_DC,
     subclass: sub.key,
     subclassFromItem: sub.fromItem,
@@ -102,7 +103,8 @@ export function prepareTabContext(actor, { editable = actor.isOwner } = {}) {
     techniques,
     readyCount: all.filter(x => x.ready).length,
     emptyText: feral ? t("Lock.Feral") : surging ? t("EmptyFilter") : t("EmptySurge"),
-    mutations: mutations(actor)
+    mutations: mutations(actor),
+    showMutations: mutations(actor).length > 0
   };
 }
 
@@ -150,6 +152,8 @@ async function handleAction(action, target, actor, rerender) {
     case "calmFeral": return calmFeral(actor);
     case "endFeral": return exitFeral(actor);
     case "removeMutation": return removeMutation(actor, target.dataset.id);
+    case "rollMutation": return drawMutation(actor);
+    case "rollInstability": return rollInstability(actor);
     case "useTech": return useTechnique(actor, techId, Number(target.dataset.option) || 0);
     case "sync": {
       const r = await syncAbilityItems(actor, { force: true });

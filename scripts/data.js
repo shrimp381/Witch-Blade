@@ -205,7 +205,7 @@ export const INSTABILITY = [
   { roll: 7, fp: 1, name: "Bloodsoaked Howl", text: "All within 10 ft make a DC 14 Wis save or be frightened for 1 round. You gain 1 FP." },
   { roll: 8, name: "Mutation Lash", text: "Partial mutation prevents casting and speech. Disadvantage on all Charisma and Intelligence checks. Ends when you exit Blood Surge." },
   { roll: 9, name: "Stalker's Obsession", text: "You must target the creature who last harmed you. Disadvantage against all others." },
-  { roll: 10, fp: 2, feralRounds: 1, name: "Shattered Restraint", text: "Gain 2 FP and roll on the Feral Mutation table. May reroll this once per Blood Surge; if so, take 4d6 psychic damage. In Feral State: increase rounds by 1 instead of gaining 2 FP, roll on the Feral Mutation table, and you cannot reroll." }
+  { roll: 10, fp: 2, feralRounds: 1, mutation: true, name: "Shattered Restraint", text: "Gain 2 FP and roll on the Feral Mutation table. May reroll this once per Blood Surge; if so, take 4d6 psychic damage. In Feral State: increase rounds by 1 instead of gaining 2 FP, roll on the Feral Mutation table, and you cannot reroll." }
 ];
 
 /** Ferality Mutations (1d100), rolled when Feral State ends. */

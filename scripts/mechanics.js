@@ -43,6 +43,27 @@ export async function setFp(actor, value) {
   return fp;
 }
 
+/**
+ * "Gained FP this turn" is tied to the combat turn it happened in, so it clears
+ * itself when the turn changes. Outside combat there are no turns, so it never blocks.
+ */
+function turnMarker() {
+  const c = game.combat;
+  return c?.started ? { combat: c.id, round: c.round, turn: c.turn } : null;
+}
+
+export async function markGainedFp(actor) {
+  const marker = turnMarker();
+  if (marker) await actor.setFlag(MODULE_ID, "gainedThisTurn", marker);
+}
+
+export function gainedFpThisTurn(actor) {
+  const f = actor.getFlag(MODULE_ID, "gainedThisTurn");
+  const now = turnMarker();
+  if (!f || !now || typeof f !== "object") return false;
+  return f.combat === now.combat && f.round === now.round && f.turn === now.turn;
+}
+
 export function capOf(actor) {
   return feralityCap(wbLevel(actor));
 }
@@ -169,7 +190,7 @@ export async function toggleBloodSurge(actor) {
     await spendSurgeUse(actor);
     const before = getFp(actor);
     const fp = await setFp(actor, before + 1);
-    await actor.setFlag(MODULE_ID, "gainedThisTurn", true);
+    await markGainedFp(actor);
     return chat(actor, t("BloodSurge"),
       `<p>${tf("Chat.SurgeOn", { stat: stat.toUpperCase(), dice })}</p><p><strong>${signed(1)} FP</strong> (${before} → ${fp})</p>`,
       t("Action.bonus"));
@@ -182,7 +203,8 @@ export async function toggleBloodSurge(actor) {
 
 /**
  * Draw from "Feral Instability" and apply what the result carries:
- * +FP normally, or +Feral rounds instead when already Feral (result 10).
+ * +FP normally, or +Feral rounds instead when already Feral (result 10), and a
+ * Feral Mutations roll when the result calls for one (result 10, Shattered Restraint).
  */
 export async function drawInstability(actor) {
   const table = game.tables.getName(INSTABILITY_TABLE);
@@ -192,8 +214,9 @@ export async function drawInstability(actor) {
   }
   const draw = await table.draw();
   const feral = feralState(actor);
-  let fp = 0, rounds = 0;
+  let fp = 0, rounds = 0, mutate = false;
   for (const r of draw.results) {
+    if (r.getFlag(MODULE_ID, "mutation") || r.name === "Shattered Restraint") mutate = true;
     const addRounds = Number(r.getFlag(MODULE_ID, "feralRounds")) || 0;
     if (feral && addRounds) rounds += addRounds;
     else fp += Number(r.getFlag(MODULE_ID, "fp")) || 0;
@@ -203,10 +226,17 @@ export async function drawInstability(actor) {
     await chat(actor, t("FeralState"), `<p>${tf("Chat.FeralExtended", { rounds })}</p>`, "", "feral");
   }
   if (fp) await setFp(actor, getFp(actor) + fp);
+  if (mutate) await drawMutation(actor);
   return draw;
 }
 
-async function drawMutation(actor) {
+/** Manual Instability roll from the tab. Reaching the cap through it still prompts the cap save. */
+export async function rollInstability(actor) {
+  return withCapCheck(actor, () => drawInstability(actor));
+}
+
+/** Roll on the Feral Mutations table and record the result. Only when a rule or the GM calls for it. */
+export async function drawMutation(actor) {
   const table = game.tables.getName(MUTATION_TABLE);
   if (!table) {
     ui.notifications.warn(tf("Warn.NoTable", { name: MUTATION_TABLE }));
@@ -265,9 +295,9 @@ export async function promptWisSave(actor, { title, text, dc, showLeave = false,
 export async function endOfTurnSave(actor) {
   if (feralState(actor)) return ui.notifications.warn(t("Lock.Feral"));
   if (!surgeEffect(actor)) return ui.notifications.warn(t("Lock.Surge"));
-  const note = actor.getFlag(MODULE_ID, "gainedThisTurn") ? t("Dialog.GainedNote") : "";
+  if (gainedFpThisTurn(actor)) return ui.notifications.warn(t("Lock.GainedFp"));
   const result = await promptWisSave(actor, {
-    title: t("EndTurnSave"), text: t("Dialog.EndTurnText"), dc: SURGE_SAVE_DC, showLeave: true, note
+    title: t("EndTurnSave"), text: t("Dialog.EndTurnText"), dc: SURGE_SAVE_DC, showLeave: true
   });
   if (!result) return;
 
@@ -282,7 +312,6 @@ export async function endOfTurnSave(actor) {
       await drawInstability(actor);
     }
   });
-  await actor.setFlag(MODULE_ID, "gainedThisTurn", false);
   if (result.leave && surgeEffect(actor) && !feralState(actor)) await toggleBloodSurge(actor);
 }
 
@@ -344,7 +373,7 @@ export async function enterFeral(actor, over = Math.max(0, getFp(actor) - capOf(
 
 /**
  * Leave Feral State.
- * full: 2 exhaustion, FP → 0, Blood Surge ends, roll a mutation (the normal ending).
+ * full: 2 exhaustion, FP → 0, Blood Surge ends (the normal ending). No mutation roll.
  * soft: dropped below the cap out of combat; keep FP, no exhaustion.
  */
 export async function exitFeral(actor, { soft = false } = {}) {
@@ -357,10 +386,7 @@ export async function exitFeral(actor, { soft = false } = {}) {
   await actor.update({ "system.attributes.exhaustion": exhaustion, "system.resources.secondary.value": 0 });
   const surge = surgeEffect(actor);
   if (surge) { await surge.delete(); await actor.unsetFlag(MODULE_ID, "oncePerSurge"); }
-  const mutation = await drawMutation(actor);
-  return chat(actor, t("Chat.FeralEndsTitle"),
-    `<p>${tf("Chat.FeralEnds", { exhaustion })}</p>${mutation ? `<p><strong>${t("Mutation")}: ${mutation.name}</strong></p>` : ""}`,
-    "", "feral");
+  return chat(actor, t("Chat.FeralEndsTitle"), `<p>${tf("Chat.FeralEnds", { exhaustion })}</p>`, "", "feral");
 }
 
 /** One Feral turn out of combat (or when automation is off): roll Instability, count down a round. */
@@ -427,7 +453,7 @@ export async function useTechnique(actor, techId, optionIndex = null) {
   return withCapCheck(actor, async () => {
     const before = getFp(actor);
     const fp = await setFp(actor, before + option.d);
-    if (option.d > 0) await actor.setFlag(MODULE_ID, "gainedThisTurn", true);
+    if (option.d > 0) await markGainedFp(actor);
     if (tech.oncePerSurge) {
       const used = actor.getFlag(MODULE_ID, "oncePerSurge") ?? [];
       await actor.setFlag(MODULE_ID, "oncePerSurge", [...used, tech.id]);
@@ -457,7 +483,6 @@ export function isResponsibleUser(actor) {
 
 /** Start of a Witch-Blade's turn. */
 export async function onTurnStart(actor) {
-  await actor.setFlag(MODULE_ID, "gainedThisTurn", false);
   if (feralState(actor)) {
     const f = feralState(actor);
     await chat(actor, t("FeralState"), `<p>${tf("Chat.FeralTurn", { n: f.total - f.rounds + 1, total: f.total })}</p>`, "", "feral");
@@ -490,7 +515,7 @@ export async function onTurnEnd(actor, combat) {
   await actor.unsetFlag(MODULE_ID, "capHeld");
 
   if (surgeEffect(actor) && game.settings.get(MODULE_ID, "promptEndTurn")) {
-    if (actor.getFlag(MODULE_ID, "gainedThisTurn")) {
+    if (gainedFpThisTurn(actor)) {
       return chat(actor, t("EndTurnSave"), `<p>${t("Chat.SaveSkipped")}</p>`);
     }
     return endOfTurnSave(actor);

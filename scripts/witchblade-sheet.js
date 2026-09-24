@@ -203,7 +203,7 @@ async function ensureTables() {
         weight: 1,
         name: r.name,
         description: `<strong>${r.name}.</strong> ${r.text}`,
-        flags: (r.fp || r.feralRounds) ? { [MODULE_ID]: { fp: r.fp ?? 0, feralRounds: r.feralRounds ?? 0 } } : {}
+        flags: (r.fp || r.feralRounds || r.mutation) ? { [MODULE_ID]: { fp: r.fp ?? 0, feralRounds: r.feralRounds ?? 0, mutation: !!r.mutation } } : {}
       }))
     });
     ui.notifications.info(tf("Info.TableCreated", { name: INSTABILITY_TABLE }));
@@ -271,6 +271,10 @@ Hooks.once("init", () => {
       none: "WITCHBLADE.Settings.tranceRest.None"
     }
   });
+
+  // Witch-Blade Initiate background: Old Common language and a Healer's Kit tool proficiency.
+  CONFIG.DND5E.languages.exotic.children.oldCommon ??= "WITCHBLADE.Language.OldCommon";
+  CONFIG.DND5E.tools.healer ??= { ability: "wis", id: "Compendium.dnd5e.items.Item.6rocoBx5jdzG1QQH" };
 
   const WitchBladeSheet = defineSheet();
   foundry.applications.apps.DocumentSheetConfig.registerSheet(Actor, MODULE_ID, WitchBladeSheet, {

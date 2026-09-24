@@ -18,7 +18,7 @@
 
 import { ACTION_LABELS, ICONS } from "./data.js";
 import {
-  MODULE_ID, t, availableTechniques,
+  MODULE_ID, t, tf, availableTechniques, wbLevel, getFp, setFp, chat, isResponsibleUser,
   toggleBloodSurge, endOfTurnSave, useTechnique, capSave
 } from "./mechanics.js";
 
@@ -56,7 +56,7 @@ function itemData({ key, name, img, activation, description, requirements, uses,
       }
     },
     flags: {
-      [MODULE_ID]: { ability: key, ...(technique ? { technique } : {}), version: moduleVersion() },
+      [MODULE_ID]: { ability: key, ...(technique ? { technique } : {}), generated: true, version: moduleVersion() },
       ...tidy
     }
   };
@@ -66,8 +66,16 @@ function moduleVersion() {
   return game.modules.get(MODULE_ID)?.version ?? "0";
 }
 
+/**
+ * Items the module should generate for this actor.
+ * Blood Surge and the two saves come from the Witch-Blade class's level-2 advancement when the
+ * actor has the class item, so they are only generated for actors without it (sidebar toggle),
+ * and only from level 2. Surge techniques are always generated (no class grants them).
+ */
 function desiredItems(actor) {
-  const items = [
+  const level = wbLevel(actor);
+  const hasClass = !!actor.classes?.[MODULE_ID];
+  const items = hasClass || level < 2 ? [] : [
     itemData({
       key: "bloodSurge",
       name: t("BloodSurge"),
@@ -95,7 +103,7 @@ function desiredItems(actor) {
     })
   ];
 
-  if (game.settings.get(MODULE_ID, "techniqueItems")) {
+  if (level >= 2 && game.settings.get(MODULE_ID, "techniqueItems")) {
     for (const tech of availableTechniques(actor, { respectLevel: true })) {
       items.push(itemData({
         key: "technique",
@@ -137,10 +145,17 @@ export function isWitchBlade(actor) {
 
 const syncing = new Set();
 
+/** True for items this module generated (as opposed to ones granted by the class compendium). */
+function isGenerated(item) {
+  return item.getFlag(MODULE_ID, "generated") === true
+    || String(item.system?.identifier ?? "").startsWith("wb-");  // generated before 0.2.2
+}
+
 /**
- * Create missing ability items, refresh ones from an older module version,
- * and remove technique items the actor no longer qualifies for.
- * Only touches items this module generated.
+ * Create missing ability items, refresh generated ones from an older module version,
+ * remove generated items the actor no longer qualifies for, and remove generated
+ * duplicates of anything the class advancement granted.
+ * Items granted by the class compendium are never modified or deleted here.
  */
 export async function syncAbilityItems(actor, { force = false } = {}) {
   if (!actor?.isOwner || !isWitchBlade(actor) || syncing.has(actor.id)) return;
@@ -149,13 +164,23 @@ export async function syncAbilityItems(actor, { force = false } = {}) {
     const desired = desiredItems(actor);
     const desiredByKey = new Map(desired.map(d => [itemKey(d), d]));
     const owned = actor.items.filter(i => i.getFlag(MODULE_ID, "ability"));
-    const ownedKeys = new Set(owned.map(docKey));
+    const granted = owned.filter(i => !isGenerated(i));
+    const generated = owned.filter(isGenerated);
+    const grantedKeys = new Set(granted.map(docKey));
 
-    const toCreate = desired.filter(d => !ownedKeys.has(itemKey(d)));
-    const toDelete = owned.filter(i => !desiredByKey.has(docKey(i))).map(i => i.id);
+    // Generated items to remove: duplicates of granted ones, duplicates of each other, or no longer wanted.
+    const toDelete = [];
+    const keptGenerated = new Map();
+    for (const item of generated) {
+      const key = docKey(item);
+      if (grantedKeys.has(key) || keptGenerated.has(key) || !desiredByKey.has(key)) toDelete.push(item.id);
+      else keptGenerated.set(key, item);
+    }
+
+    const toCreate = desired.filter(d => !grantedKeys.has(itemKey(d)) && !keptGenerated.has(itemKey(d)));
     const version = moduleVersion();
-    const toUpdate = owned
-      .filter(i => desiredByKey.has(docKey(i)) && (force || i.getFlag(MODULE_ID, "version") !== version))
+    const toUpdate = [...keptGenerated.values()]
+      .filter(i => force || i.getFlag(MODULE_ID, "version") !== version)
       .map(i => {
         const d = desiredByKey.get(docKey(i));
         const [activityId, activity] = Object.entries(d.system.activities)[0];
@@ -167,6 +192,7 @@ export async function syncAbilityItems(actor, { force = false } = {}) {
           "system.description.value": d.system.description.value,
           "system.requirements": d.system.requirements,
           [`flags.${MODULE_ID}.version`]: version,
+          [`flags.${MODULE_ID}.generated`]: true,
           ...(d.flags[TIDY_ID] ? { [`flags.${TIDY_ID}.section`]: d.flags[TIDY_ID].section, [`flags.${TIDY_ID}.actionSection`]: d.flags[TIDY_ID].actionSection } : {})
         };
         if (existingActivity) update[`system.activities.${activityId}.activation.type`] = activity.activation.type;
@@ -197,7 +223,34 @@ export async function runAbility(item, actor = item?.actor) {
   }
 }
 
+/**
+ * Alchemical consumables from the compendium carry flags.witch-blade.alchemy:
+ * { activity, fp: "<formula>", exhaustion: <n> }. After that activity is used, apply them.
+ */
+async function applyAlchemy(activity) {
+  const item = activity?.item;
+  const actor = item?.actor;
+  const alchemy = item?.getFlag?.(MODULE_ID, "alchemy");
+  if (!alchemy || !actor || (activity.id ?? activity._id) !== alchemy.activity) return;
+  if (!isWitchBlade(actor) || !isResponsibleUser(actor)) return;
+  const lines = [];
+  if (alchemy.fp) {
+    const roll = await new Roll(String(alchemy.fp)).evaluate();
+    const before = getFp(actor);
+    const fp = await setFp(actor, before + roll.total);
+    lines.push(`FP ${roll.total >= 0 ? "+" : ""}${roll.total} (${alchemy.fp}): ${before} → ${fp}`);
+  }
+  if (alchemy.exhaustion) {
+    const now = Math.min(6, (actor.system.attributes?.exhaustion ?? 0) + Number(alchemy.exhaustion));
+    await actor.update({ "system.attributes.exhaustion": now });
+    lines.push(tf("Chat.AlchemyExhaustion", { n: alchemy.exhaustion, now }));
+  }
+  if (lines.length) await chat(actor, item.name, lines.map(l => `<p>${l}</p>`).join(""));
+}
+
 export function registerAbilityHooks() {
+  Hooks.on("dnd5e.postUseActivity", activity => { applyAlchemy(activity); });
+
   // Executor: whichever UI uses the item (Argon, sheet, hotbar), run the Witch-Blade logic.
   Hooks.on("dnd5e.preUseActivity", activity => {
     const item = activity?.item;
@@ -209,7 +262,8 @@ export function registerAbilityHooks() {
   // Keep items in step with class/subclass changes, made by this user.
   const onItemChange = (item, _opts, userId) => {
     if (userId !== game.user.id || !item.parent) return;
-    if (["class", "subclass"].includes(item.type)) syncAbilityItems(item.parent);
+    const grantedAbility = item.getFlag?.(MODULE_ID, "ability") && !isGenerated(item);
+    if (["class", "subclass"].includes(item.type) || grantedAbility) syncAbilityItems(item.parent);
   };
   Hooks.on("createItem", (item, opts, userId) => onItemChange(item, opts, userId));
   Hooks.on("deleteItem", (item, opts, userId) => onItemChange(item, opts, userId));

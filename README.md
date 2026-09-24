@@ -28,7 +28,14 @@ The module adds a **Witch-Blade** compendium folder with two compendiums:
   - every class and subclass feature
 
   Level-up grants features automatically, and the scaling numbers (Feral Edge damage, DC and uses; Targeted Strike and Vein-Charged dice) update with level. The Veil-Splitter casts with Intelligence, and its spell slots follow the V2.5 table.
-- **Witch-Blade: Tables.** The **Feral Instability** (1d10) and **Feral Mutations** (1d100) roll tables. The module imports them into the world automatically the first time a GM loads it.
+- **Witch-Blade: Class, Background & Items** also contains:
+  - **Witch-Blade Initiate** background. It gives Insight and Survival, a choice of Alchemist's Supplies or Healer's Kit proficiency, Old Common, and the Handler's Network feature (once per long rest, plus a DC 12 History or Survival check to find a safehouse). Starting equipment: Witch-Blade Insignia, Vial of Unstable Beastman Blood, Black Vein Tonic, Witch-Blade Clothing, studded leather or scale mail, an explorer's pack and 50 gp.
+  - **Alchemy:** Lysis Serum, Black Vein Tonic, Amber Spore Capsule, Crimson Reflex Serum, Witch-Iron Elixir, Ashveil Catalyst, Vein-Eater Resin, Noct-Bliss Elixir and Crimson Wake Tonic. Each is a single-use consumable with its action cost, timed effects where dnd5e can apply them, side-effect saves, and an addiction save on the addictive ones. Black Vein Tonic and Ashveil Catalyst change FP (and exhaustion) automatically.
+  - **Class starting equipment:** a greatsword, plus a hand crossbow with 20 bolts or two daggers.
+- **Witch-Blade: Tables.** Contains:
+  - **Feral Instability** (1d10) and **Feral Mutations** (1d100). The module imports these into the world automatically the first time a GM loads it.
+  - **Lysis Serum: Side Effects** (1d4).
+  - The four Witch-Blade Initiate characteristic tables (Personality Traits, Ideals, Bonds, Flaws).
 
 ## Set up a character
 
@@ -53,10 +60,10 @@ The first time the tab opens, the module sets the sheet's secondary resource to 
 |---|---|
 | FP gauge | Click a node to set FP. The brass line marks the cap. Nodes past it are striped. |
 | **Blood Surge** | Bonus action. Adds the Blood Surge effect (+5 STR, or DEX for Seekers; extra force damage on melee attacks; advantage on STR checks and saves), gains 1 FP and spends a use. Click again to end it. |
-| **End-of-Turn Save** | DC 13 Wisdom save, rolled with Advantage, Normal or Disadvantage. Success: −1 FP, and you can also end the surge. Failure: +1 FP and a draw from Feral Instability. |
+| **End-of-Turn Save** | DC 13 Wisdom save, rolled with Advantage, Normal or Disadvantage. Success: −1 FP, and you can also end the surge. Failure: +1 FP and a draw from Feral Instability. If you gained FP this turn (in combat), the save is unavailable and the tab says so. |
 | **Ferality cap** | When FP reaches the cap, the **Ferality Cap Save** opens automatically (DC 13 + 1 per FP over the cap). Success keeps control until the end of your next turn. Failure starts **Feral State**. |
-| **Feral State** | Lasts 1d4 rounds + 1 per FP over the cap. It adds resistance to nonmagical bludgeoning, piercing and slashing damage. Techniques, Blood Surge and the end-of-turn save are locked. When it ends: +2 exhaustion, FP resets to 0, Blood Surge ends, and a mutation is rolled and listed on the tab. |
-| Mutations | Listed on the tab. Remove one with × (for example, after a Lysis purge). |
+| **Feral State** | Lasts 1d4 rounds + 1 per FP over the cap. It adds resistance to nonmagical bludgeoning, piercing and slashing damage. Techniques, Blood Surge and the end-of-turn save are locked. When it ends: +2 exhaustion, FP resets to 0 and Blood Surge ends. No mutation is rolled automatically. |
+| **Instability** / **Mutation** | Buttons beside the End-of-Turn Save that roll on each table. Instability results apply their FP or Feral rounds. Result 10 (Shattered Restraint) also rolls a mutation automatically. Mutations are listed on the tab; remove one with × (for example, after a Lysis purge). |
 | Surge Techniques | Core plus your subclass's techniques. They unlock once you are in Blood Surge and at the FP requirement; Advanced techniques unlock at level 11. Click one to read it and use it. |
 
 ### In combat (automatic)
@@ -104,10 +111,11 @@ Clicking a technique asks which outcome happened when there is more than one, fo
 ## Not yet included
 
 - Hardened Ferality, Controlled Tap and the level 17–20 capstones are in the compendium with their uses and effects, but they don't interact with the Ferality tracker yet.
-- The alchemy items and the Witch-Blade Initiate background.
+- Alchemy effects that change the Ferality rules (instability immunity, Witch-Iron's automatic save) are described on the items but not automated yet.
 
 ## Changelog
 
+- **0.2.2:** Witch-Blade Initiate background with starting equipment and gear. All nine alchemical consumables. Class starting equipment. Characteristic and Lysis side-effect tables. The end-of-turn save is unavailable after gaining FP that turn. Removed the redundant header strip from the Ferality tab. Leaving Feral State no longer rolls a mutation. Instability result 10 does, as the rule says. Added Instability and Mutation roll buttons to the Ferality section. Fixed duplicate Blood Surge, End-of-Turn Save and Ferality Cap Save when levelling from 1 to 2. The module now leaves those three to the class's level-up grant and removes any duplicates it made earlier.
 - **0.2.1:** Class, subclass and feature compendium (V2.5), and a roll tables compendium.
 - **0.2.0:** Tidy 5e Sheets tab, Ferality Cap Save and Feral State automation, core icons, Surge Techniques features section.
 - **0.1.0:** First release.

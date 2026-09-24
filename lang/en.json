@@ -41,7 +41,8 @@
       "Level": "Unlocks at Witch-Blade level 11",
       "Fp": "Needs {req} FP (you have {fp})",
       "Once": "Already used this Blood Surge",
-      "Feral": "Unavailable in Feral State"
+      "Feral": "Unavailable in Feral State",
+      "GainedFp": "Save unavailable, you have gained FP this turn."
     },
     "Action": {
       "action": "Action",
@@ -67,8 +68,9 @@
       "FeralLeft": "{rounds} round(s) of Feral State left.",
       "FeralTurn": "Feral turn {n} of {total}. Instability decides this turn's course of action.",
       "CalmFailed": "You fail to calm down. FP is now {fp}.",
-      "SaveSkipped": "You gained FP this turn, so there's no end-of-turn save.",
-      "CombatEndedFeral": "Combat ended while in Feral State. Use <i>Calm down</i> on the Ferality tab: make a Blood Surge save each round until you succeed or your FP falls below the cap."
+      "SaveSkipped": "Save unavailable, you have gained FP this turn.",
+      "CombatEndedFeral": "Combat ended while in Feral State. Use <i>Calm down</i> on the Ferality tab: make a Blood Surge save each round until you succeed or your FP falls below the cap.",
+      "AlchemyExhaustion": "Gain {n} level(s) of exhaustion (now {now})."
     },
     "Warn": {
       "SurgeLevel": "Blood Surge unlocks at Witch-Blade level 2.",
@@ -80,7 +82,6 @@
       "Advantage": "Advantage",
       "Normal": "Normal",
       "Disadvantage": "Disadvantage",
-      "GainedNote": "You gained FP this turn. By the class rules this save is optional, so you can close this window.",
       "EndTurnText": "Wisdom save. Success: reduce FP by 1. Failure: gain 1 FP and draw from Feral Instability.",
       "PickOutcome": "Which outcome happened?",
       "CapText": "You're at {fp}/{cap} FP. On a success you keep control until the end of your next turn. On a failure you enter Feral State for 1d4{extra} rounds.",
@@ -96,7 +97,7 @@
       "BloodSurge": "Bonus action. For 1 minute: +5 STR (DEX for Seekers), melee attacks deal extra force damage (1d4, +1d4 per proficiency increase), advantage on STR checks and saves, and access to surge techniques. Gain 1 FP. Uses equal to your proficiency bonus per short rest. Using this again ends the surge.",
       "EndTurnSave": "At the end of each turn in Blood Surge, if you have not gained FP, you can make a DC 13 Wisdom save. Success: reduce FP by 1 and optionally end Blood Surge. Failure: gain 1 FP and roll on the Feral Instability table.",
       "CapSave": "When you reach your Ferality cap, make a Wisdom save (DC 13 + 1 per FP over the cap). On a success you keep control until the end of your next turn. On a failure you enter Feral State for 1d4 rounds + 1 per FP over the cap. The module prompts for this automatically; use this to roll it by hand.",
-      "Feral": "Resistance to nonmagical damage and advantage on melee attacks. Roll on Feral Instability at the start of each turn. When it ends: 2 levels of exhaustion, FP resets to 0, roll a Feral Mutation."
+      "Feral": "Resistance to nonmagical damage and advantage on melee attacks. Roll on Feral Instability at the start of each turn. When it ends: 2 levels of exhaustion and FP resets to 0."
     },
     "Exhaustion": "Exhaustion",
     "CapSave": "Ferality Cap Save",
@@ -139,6 +140,14 @@
         "Both": "Short and long rests",
         "None": "Never (track it manually)"
       }
-    }
+    },
+    "Language": {
+      "OldCommon": "Old Common"
+    },
+    "RollMutation": "Mutation",
+    "RollMutationHint": "Roll on the Feral Mutations table and add the result to this character's mutations.",
+    "NoMutations": "No mutations yet.",
+    "RollInstability": "Instability",
+    "RollInstabilityHint": "Roll on the Feral Instability table. FP, extra Feral rounds and mutations from the result are applied automatically."
   }
 }
